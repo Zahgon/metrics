@@ -1,9 +1,7 @@
 package metrics
 
 import (
-	"fmt"
 	"io"
-	"math"
 	"sync"
 	"time"
 )
@@ -53,47 +51,21 @@ type PrometheusHistogram struct {
 }
 
 // Reset resets previous observations in h.
-func (h *PrometheusHistogram) Reset() {
-	h.mu.Lock()
-	for i := range h.buckets {
-		h.buckets[i] = 0
-	}
-	h.sum = 0
-	h.count = 0
-	h.mu.Unlock()
-}
+func (h *PrometheusHistogram) Reset() { _ = "STUB: not implemented"; return }
 
 // Update updates h with v.
 //
 // Negative values and NaNs are ignored.
-func (h *PrometheusHistogram) Update(v float64) {
-	if math.IsNaN(v) || v < 0 {
-		// Skip NaNs and negative values.
-		return
-	}
-	bucketIdx := -1
-	for i, ub := range h.upperBounds {
-		if v <= ub {
-			bucketIdx = i
-			break
-		}
-	}
-	h.mu.Lock()
-	h.sum += v
-	h.count++
-	if bucketIdx == -1 {
-		// +Inf, nothing to do, already accounted for in the total sum
-		h.mu.Unlock()
-		return
-	}
-	h.buckets[bucketIdx]++
-	h.mu.Unlock()
-}
+func (h *PrometheusHistogram) Update(v float64) { _ = "STUB: not implemented"; return }
+
+// Skip NaNs and negative values.
+
+// +Inf, nothing to do, already accounted for in the total sum
 
 // UpdateDuration updates request duration based on the given startTime.
 func (h *PrometheusHistogram) UpdateDuration(startTime time.Time) {
-	d := time.Since(startTime).Seconds()
-	h.Update(d)
+	_ = "STUB: not implemented"
+	return
 }
 
 // NewPrometheusHistogram creates and returns new PrometheusHistogram with the given name
@@ -108,7 +80,8 @@ func (h *PrometheusHistogram) UpdateDuration(startTime time.Time) {
 //
 // The returned histogram is safe to use from concurrent goroutines.
 func NewPrometheusHistogram(name string) *PrometheusHistogram {
-	return defaultSet.NewPrometheusHistogram(name)
+	_ = "STUB: not implemented"
+	return nil
 }
 
 // NewPrometheusHistogramExt creates and returns new PrometheusHistogram with the given name
@@ -123,7 +96,8 @@ func NewPrometheusHistogram(name string) *PrometheusHistogram {
 //
 // The returned histogram is safe to use from concurrent goroutines.
 func NewPrometheusHistogramExt(name string, upperBounds []float64) *PrometheusHistogram {
-	return defaultSet.NewPrometheusHistogramExt(name, upperBounds)
+	_ = "STUB: not implemented"
+	return nil
 }
 
 // GetOrCreatePrometheusHistogram returns registered PrometheusHistogram with the given name
@@ -141,7 +115,8 @@ func NewPrometheusHistogramExt(name string, upperBounds []float64) *PrometheusHi
 //
 // Performance tip: prefer NewPrometheusHistogram instead of GetOrCreatePrometheusHistogram.
 func GetOrCreatePrometheusHistogram(name string) *PrometheusHistogram {
-	return defaultSet.GetOrCreatePrometheusHistogram(name)
+	_ = "STUB: not implemented"
+	return nil
 }
 
 // GetOrCreatePrometheusHistogramExt returns registered PrometheusHistogram with the given name and
@@ -159,42 +134,22 @@ func GetOrCreatePrometheusHistogram(name string) *PrometheusHistogram {
 //
 // Performance tip: prefer NewPrometheusHistogramExt instead of GetOrCreatePrometheusHistogramExt.
 func GetOrCreatePrometheusHistogramExt(name string, upperBounds []float64) *PrometheusHistogram {
-	return defaultSet.GetOrCreatePrometheusHistogramExt(name, upperBounds)
+	_ = "STUB: not implemented"
+	return nil
 }
 
 func newPrometheusHistogram(upperBounds []float64) *PrometheusHistogram {
-	mustValidateBuckets(upperBounds)
-	last := len(upperBounds) - 1
-	if math.IsInf(upperBounds[last], +1) {
-		upperBounds = upperBounds[:last] // ignore +Inf bucket as it is covered anyways
-	}
-	h := PrometheusHistogram{
-		upperBounds: upperBounds,
-		buckets:     make([]uint64, len(upperBounds)),
-	}
-
-	return &h
+	_ = "STUB: not implemented"
+	return nil
 }
 
-func mustValidateBuckets(upperBounds []float64) {
-	if err := ValidateBuckets(upperBounds); err != nil {
-		panic(err)
-	}
-}
+// ignore +Inf bucket as it is covered anyways
+
+func mustValidateBuckets(upperBounds []float64) { _ = "STUB: not implemented"; return }
 
 // ValidateBuckets validates the given upperBounds and returns an error
 // if validation failed.
-func ValidateBuckets(upperBounds []float64) error {
-	if len(upperBounds) == 0 {
-		return fmt.Errorf("upperBounds can't be empty")
-	}
-	for i := range len(upperBounds) - 1 {
-		if upperBounds[i] >= upperBounds[i+1] {
-			return fmt.Errorf("upper bounds for the buckets must be strictly increasing")
-		}
-	}
-	return nil
-}
+func ValidateBuckets(upperBounds []float64) error { _ = "STUB: not implemented"; return nil }
 
 // LinearBuckets returns a list of upperBounds for PrometheusHistogram,
 // and whose distribution is as follows:
@@ -203,16 +158,8 @@ func ValidateBuckets(upperBounds []float64) error {
 //
 // Panics if given start, width and count produce negative buckets or none buckets at all.
 func LinearBuckets(start, width float64, count int) []float64 {
-	if count < 1 {
-		panic("LinearBuckets: count can't be less than 1")
-	}
-	upperBounds := make([]float64, count)
-	for i := range upperBounds {
-		upperBounds[i] = start
-		start += width
-	}
-	mustValidateBuckets(upperBounds)
-	return upperBounds
+	_ = "STUB: not implemented"
+	return nil
 }
 
 // ExponentialBuckets returns a list of upperBounds for PrometheusHistogram,
@@ -222,52 +169,13 @@ func LinearBuckets(start, width float64, count int) []float64 {
 //
 // Panics if given start, width and count produce negative buckets or none buckets at all.
 func ExponentialBuckets(start, factor float64, count int) []float64 {
-	if count < 1 {
-		panic("ExponentialBuckets: count can't be less than 1")
-	}
-	if factor <= 1 {
-		panic("ExponentialBuckets: factor must be greater than 1")
-	}
-	if start <= 0 {
-		panic("ExponentialBuckets: start can't be less than 0")
-	}
-	upperBounds := make([]float64, count)
-	for i := range upperBounds {
-		upperBounds[i] = start
-		start *= factor
-	}
-	mustValidateBuckets(upperBounds)
-	return upperBounds
+	_ = "STUB: not implemented"
+	return nil
 }
 
 func (h *PrometheusHistogram) marshalTo(prefix string, w io.Writer) {
-	cumulativeSum := uint64(0)
-	h.mu.Lock()
-	count := h.count
-	sum := h.sum
-	for i, ub := range h.upperBounds {
-		cumulativeSum += h.buckets[i]
-		tag := fmt.Sprintf(`le="%v"`, ub)
-		metricName := addTag(prefix, tag)
-		name, labels := splitMetricName(metricName)
-		fmt.Fprintf(w, "%s_bucket%s %d\n", name, labels, cumulativeSum)
-	}
-	h.mu.Unlock()
-
-	tag := fmt.Sprintf("le=%q", "+Inf")
-	metricName := addTag(prefix, tag)
-	name, labels := splitMetricName(metricName)
-	fmt.Fprintf(w, "%s_bucket%s %d\n", name, labels, count)
-
-	name, labels = splitMetricName(prefix)
-	if float64(int64(sum)) == sum {
-		fmt.Fprintf(w, "%s_sum%s %d\n", name, labels, int64(sum))
-	} else {
-		fmt.Fprintf(w, "%s_sum%s %g\n", name, labels, sum)
-	}
-	fmt.Fprintf(w, "%s_count%s %d\n", name, labels, count)
+	_ = "STUB: not implemented"
+	return
 }
 
-func (h *PrometheusHistogram) metricType() string {
-	return "histogram"
-}
+func (h *PrometheusHistogram) metricType() string { _ = "STUB: not implemented"; return "" }

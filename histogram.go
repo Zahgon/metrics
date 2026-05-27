@@ -66,84 +66,20 @@ type Histogram struct {
 }
 
 // Reset resets the given histogram.
-func (h *Histogram) Reset() {
-	h.mu.Lock()
-	for _, db := range h.decimalBuckets[:] {
-		if db == nil {
-			continue
-		}
-		for i := range db[:] {
-			db[i] = 0
-		}
-	}
-	h.lower = 0
-	h.upper = 0
-	h.sum = 0
-	h.mu.Unlock()
-}
+func (h *Histogram) Reset() { _ = "STUB: not implemented"; return }
 
 // Update updates h with v.
 //
 // Negative values and NaNs are ignored.
-func (h *Histogram) Update(v float64) {
-	if math.IsNaN(v) || v < 0 {
-		// Skip NaNs and negative values.
-		return
-	}
-	bucketIdx := (math.Log10(v) - e10Min) * bucketsPerDecimal
-	h.mu.Lock()
-	h.sum += v
-	if bucketIdx < 0 {
-		h.lower++
-	} else if bucketIdx >= bucketsCount {
-		h.upper++
-	} else {
-		idx := uint(bucketIdx)
-		if bucketIdx == float64(idx) && idx > 0 {
-			// Edge case for 10^n values, which must go to the lower bucket
-			// according to Prometheus logic for `le`-based histograms.
-			idx--
-		}
-		decimalBucketIdx := idx / bucketsPerDecimal
-		offset := idx % bucketsPerDecimal
-		db := h.decimalBuckets[decimalBucketIdx]
-		if db == nil {
-			var b [bucketsPerDecimal]uint64
-			db = &b
-			h.decimalBuckets[decimalBucketIdx] = db
-		}
-		db[offset]++
-	}
-	h.mu.Unlock()
-}
+func (h *Histogram) Update(v float64) { _ = "STUB: not implemented"; return }
+
+// Skip NaNs and negative values.
+
+// Edge case for 10^n values, which must go to the lower bucket
+// according to Prometheus logic for `le`-based histograms.
 
 // Merge merges src to h
-func (h *Histogram) Merge(src *Histogram) {
-	h.mu.Lock()
-	defer h.mu.Unlock()
-
-	src.mu.Lock()
-	defer src.mu.Unlock()
-
-	h.lower += src.lower
-	h.upper += src.upper
-	h.sum += src.sum
-
-	for i, dbSrc := range src.decimalBuckets {
-		if dbSrc == nil {
-			continue
-		}
-		dbDst := h.decimalBuckets[i]
-		if dbDst == nil {
-			var b [bucketsPerDecimal]uint64
-			dbDst = &b
-			h.decimalBuckets[i] = dbDst
-		}
-		for j := range dbSrc {
-			dbDst[j] += dbSrc[j]
-		}
-	}
-}
+func (h *Histogram) Merge(src *Histogram) { _ = "STUB: not implemented"; return }
 
 // VisitNonZeroBuckets calls f for all buckets with non-zero counters.
 //
@@ -152,26 +88,8 @@ func (h *Histogram) Merge(src *Histogram) {
 // This is required to be compatible with Prometheus-style histogram buckets
 // with `le` (less or equal) labels.
 func (h *Histogram) VisitNonZeroBuckets(f func(vmrange string, count uint64)) {
-	h.mu.Lock()
-	if h.lower > 0 {
-		f(lowerBucketRange, h.lower)
-	}
-	for decimalBucketIdx, db := range h.decimalBuckets[:] {
-		if db == nil {
-			continue
-		}
-		for offset, count := range db[:] {
-			if count > 0 {
-				bucketIdx := decimalBucketIdx*bucketsPerDecimal + offset
-				vmrange := getVMRange(bucketIdx)
-				f(vmrange, count)
-			}
-		}
-	}
-	if h.upper > 0 {
-		f(upperBucketRange, h.upper)
-	}
-	h.mu.Unlock()
+	_ = "STUB: not implemented"
+	return
 }
 
 // NewHistogram creates and returns new histogram with the given name.
@@ -184,9 +102,7 @@ func (h *Histogram) VisitNonZeroBuckets(f func(vmrange string, count uint64)) {
 //   - foo{bar="baz",aaa="b"}
 //
 // The returned histogram is safe to use from concurrent goroutines.
-func NewHistogram(name string) *Histogram {
-	return defaultSet.NewHistogram(name)
-}
+func NewHistogram(name string) *Histogram { _ = "STUB: not implemented"; return nil }
 
 // GetOrCreateHistogram returns registered histogram with the given name
 // or creates new histogram if the registry doesn't contain histogram with
@@ -202,31 +118,14 @@ func NewHistogram(name string) *Histogram {
 // The returned histogram is safe to use from concurrent goroutines.
 //
 // Performance tip: prefer NewHistogram instead of GetOrCreateHistogram.
-func GetOrCreateHistogram(name string) *Histogram {
-	return defaultSet.GetOrCreateHistogram(name)
-}
+func GetOrCreateHistogram(name string) *Histogram { _ = "STUB: not implemented"; return nil }
 
 // UpdateDuration updates request duration based on the given startTime.
-func (h *Histogram) UpdateDuration(startTime time.Time) {
-	d := time.Since(startTime).Seconds()
-	h.Update(d)
-}
+func (h *Histogram) UpdateDuration(startTime time.Time) { _ = "STUB: not implemented"; return }
 
-func getVMRange(bucketIdx int) string {
-	bucketRangesOnce.Do(initBucketRanges)
-	return bucketRanges[bucketIdx]
-}
+func getVMRange(bucketIdx int) string { _ = "STUB: not implemented"; return "" }
 
-func initBucketRanges() {
-	v := math.Pow10(e10Min)
-	start := fmt.Sprintf("%.3e", v)
-	for i := range bucketsCount {
-		v *= bucketMultiplier
-		end := fmt.Sprintf("%.3e", v)
-		bucketRanges[i] = start + "..." + end
-		start = end
-	}
-}
+func initBucketRanges() { _ = "STUB: not implemented"; return }
 
 var (
 	lowerBucketRange = fmt.Sprintf("0...%.3e", math.Pow10(e10Min))
@@ -236,36 +135,12 @@ var (
 	bucketRangesOnce sync.Once
 )
 
-func (h *Histogram) marshalTo(prefix string, w io.Writer) {
-	countTotal := uint64(0)
-	h.VisitNonZeroBuckets(func(vmrange string, count uint64) {
-		tag := fmt.Sprintf("vmrange=%q", vmrange)
-		metricName := addTag(prefix, tag)
-		name, labels := splitMetricName(metricName)
-		fmt.Fprintf(w, "%s_bucket%s %d\n", name, labels, count)
-		countTotal += count
-	})
-	if countTotal == 0 {
-		return
-	}
-	name, labels := splitMetricName(prefix)
-	sum := h.getSum()
-	if float64(int64(sum)) == sum {
-		fmt.Fprintf(w, "%s_sum%s %d\n", name, labels, int64(sum))
-	} else {
-		fmt.Fprintf(w, "%s_sum%s %g\n", name, labels, sum)
-	}
-	fmt.Fprintf(w, "%s_count%s %d\n", name, labels, countTotal)
-}
+func (h *Histogram) marshalTo(prefix string, w io.Writer) { _ = "STUB: not implemented"; return }
 
-func (h *Histogram) getSum() float64 {
-	h.mu.Lock()
-	sum := h.sum
-	h.mu.Unlock()
-	return sum
-}
+func (h *Histogram) getSum() float64 { _ = "STUB: not implemented"; return 0 }
 
 func (h *Histogram) metricType() string {
+	_ = "STUB: not implemented"
 	// The Prometheus data model requires histogram metrics to expose "le" labels.
 	// Some collectors, such as the OpenTelemetry (OTEL) Collector, strictly enforce
 	// this data model and apply transformations based on the metric type.
@@ -274,5 +149,5 @@ func (h *Histogram) metricType() string {
 	// introducing a custom "vm_histogram" type is not possible.
 	//
 	// So it's better to use untyped metric type.
-	return "untyped"
+	return ""
 }

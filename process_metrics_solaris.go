@@ -12,7 +12,6 @@ import (
 	"os"
 	"strings"
 	"syscall"
-	"unsafe"
 )
 
 /** Solaris 11.3 types deduced from /usr/include/sys/procfs.h **/
@@ -455,141 +454,16 @@ func init() {
 
 var nan = math.NaN()
 
-func time2float(t timestruc_t) float64 {
-	return float64(t.tv_sec) + float64(t.tv_nsec)*1e-9
-}
-func time2float2(a timestruc_t, b timestruc_t) float64 {
-	return float64(a.tv_sec+b.tv_sec) + float64(a.tv_nsec+b.tv_nsec)*1e-9
-}
+func time2float(t timestruc_t) float64 { _ = "STUB: not implemented"; return 0 }
 
-func updateProcMetrics() {
-	var status pstatus_t
-	var psinfo psinfo_t
-	var usage prusage_t
+func time2float2(a timestruc_t, b timestruc_t) float64 { _ = "STUB: not implemented"; return 0 }
 
-	var fail = pm_fd[FD_STAT] < 0
-	if !fail {
-		n, err := syscall.Pread(pm_fd[FD_STAT],
-			(*(*[unsafe.Sizeof(status)]byte)(unsafe.Pointer(&status)))[:], 0)
-		fail = (n < 324 || err != nil)
-		if fail {
-			fmt.Printf("WARNING: read %s@%d failed: %v\n",
-				pm_file[FD_STAT].Name(), n, err)
-		}
-	}
-	if fail {
-		pm_val[PM_NUM_THREADS] = nan
-		pm_val[PM_UTIME] = nan
-		pm_val[PM_STIME] = nan
-		pm_val[PM_TIME] = nan
-		pm_val[PM_CUTIME] = nan
-		pm_val[PM_CSTIME] = nan
-		pm_val[PM_CTIME] = nan
-	} else {
-		pm_val[PM_NUM_THREADS] = float64(status.pr_nlwp + status.pr_nzomb)
-		pm_val[PM_UTIME] = time2float(status.pr_utime)
-		pm_val[PM_STIME] = time2float(status.pr_stime)
-		pm_val[PM_TIME] = time2float2(status.pr_utime, status.pr_stime)
-		pm_val[PM_CUTIME] = time2float(status.pr_cutime)
-		pm_val[PM_CSTIME] = time2float(status.pr_cstime)
-		pm_val[PM_CTIME] = time2float2(status.pr_cutime, status.pr_cstime)
-	}
-	fail = pm_fd[FD_PSINFO] < 0
-	if !fail {
-		n, err := syscall.Pread(pm_fd[FD_PSINFO],
-			(*(*[unsafe.Sizeof(psinfo)]byte)(unsafe.Pointer(&psinfo)))[:], 0)
-		fail = (n < 272 || err != nil)
-		if fail {
-			fmt.Printf("WARNING: read %s@%d failed: %v\n",
-				pm_file[FD_PSINFO].Name(), n, err)
-		}
-	}
-	if fail {
-		pm_val[PM_VSIZE] = nan
-		pm_val[PM_RSS] = nan
-		pm_val[PM_CPU_UTIL] = nan
-		pm_val[PM_MEM_UTIL] = nan
-		pm_val[PM_STARTTIME] = nan
-	} else {
-		//num_threads = psinfo.pr_nlwp + psinfo.pr_nzomb	// already by status
-		pm_val[PM_VSIZE] = float64(psinfo.pr_size << 10)
-		pm_val[PM_RSS] = float64(psinfo.pr_rssize << 10)
-		pm_val[PM_CPU_UTIL] = 100 * float64(psinfo.pr_pctcpu) / float64(0x8000)
-		pm_val[PM_MEM_UTIL] = 100 * float64(psinfo.pr_pctmem) / float64(0x8000)
-		pm_val[PM_STARTTIME] = float64(psinfo.pr_start.tv_sec)
-	}
-	fail = pm_fd[FD_USAGE] < 0
-	if !fail {
-		n, err := syscall.Pread(pm_fd[FD_USAGE],
-			(*(*[unsafe.Sizeof(usage)]byte)(unsafe.Pointer(&usage)))[:], 0)
-		fail = (n < 424 || err != nil)
-		if fail {
-			fmt.Printf("WARNING: read %s@%d failed: %v\n",
-				pm_file[FD_USAGE].Name(), n, err)
-		}
-	}
-	if fail {
-		pm_val[PM_MINFLT] = nan
-		pm_val[PM_MAJFLT] = nan
-		pm_val[PM_VCTX] = nan
-		pm_val[PM_ICTX] = nan
-	} else {
-		pm_val[PM_MINFLT] = float64(usage.pr_minf)
-		pm_val[PM_MAJFLT] = float64(usage.pr_majf)
-		pm_val[PM_VCTX] = float64(usage.pr_vctx)
-		pm_val[PM_ICTX] = float64(usage.pr_ictx)
-	}
-}
+func updateProcMetrics() { _ = "STUB: not implemented"; return }
 
-func updateFdMetrics() {
-	pm_val[PM_OPEN_FDS] = 0
-	f, err := os.Open(fd_path)
-	if err != nil {
-		log.Printf("ERROR: metrics: Unable to open %s", fd_path)
-		return
-	}
-	defer f.Close()
-	for {
-		names, err := f.Readdirnames(512)
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			log.Printf("ERROR: metrics: Read error for %s: %s", fd_path, err)
-			return
-		}
-		pm_val[PM_OPEN_FDS] += float64(len(names))
-	}
-}
+//num_threads = psinfo.pr_nlwp + psinfo.pr_nzomb	// already by status
 
-func writeProcessMetrics(w io.Writer) {
-	updateProcMetrics()
-	if isMetadataEnabled() {
-		for _, v := range activeProcMetrics {
-			fmt.Fprintf(w, "# HELP %s %s\n# TYPE %s %s\n%s %.17g\n",
-				pm_desc[v].name, pm_desc[v].help,
-				pm_desc[v].name, pm_desc[v].mtype,
-				pm_desc[v].name, pm_val[v])
-		}
-	} else {
-		for _, v := range activeProcMetrics {
-			fmt.Fprintf(w, "%s %.17g\n", pm_desc[v].name, pm_val[v])
-		}
-	}
-}
+func updateFdMetrics() { _ = "STUB: not implemented"; return }
 
-func writeFDMetrics(w io.Writer) {
-	updateFdMetrics()
-	if isMetadataEnabled() {
-		for _, v := range activeFdMetrics {
-			fmt.Fprintf(w, "# HELP %s %s\n# TYPE %s %s\n%s %.17g\n",
-				pm_desc[v].name, pm_desc[v].help,
-				pm_desc[v].name, pm_desc[v].mtype,
-				pm_desc[v].name, pm_val[v])
-		}
-	} else {
-		for _, v := range activeFdMetrics {
-			fmt.Fprintf(w, "%s %.17g\n", pm_desc[v].name, pm_val[v])
-		}
-	}
-}
+func writeProcessMetrics(w io.Writer) { _ = "STUB: not implemented"; return }
+
+func writeFDMetrics(w io.Writer) { _ = "STUB: not implemented"; return }
